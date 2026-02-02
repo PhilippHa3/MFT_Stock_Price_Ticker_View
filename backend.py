@@ -51,18 +51,23 @@ if __name__ == '__main__':
     shared_queue = mp.Queue(maxsize=10)
 
     # define + start worker processes
-    p1 = mp.Process(target=stock_price_gen_process, args=(2, 0, "Google", shared_queue, 750.0))
-    p2 = mp.Process(target=stock_price_gen_process, args=(1, 1, "Nvidia", shared_queue, 500.0))
-    p3 = mp.Process(target=stock_price_gen_process, args=(1.5, 2, "Apple", shared_queue, 250.0))
+    processes = [
+        mp.Process(target=stock_price_gen_process, args=(2, 0, "Google", shared_queue, 750.0)),
+        mp.Process(target=stock_price_gen_process, args=(1, 1, "Nvidia", shared_queue, 500.0)),
+        mp.Process(target=stock_price_gen_process, args=(1.5, 2, "Apple", shared_queue, 250.0))
+    ]
 
-    p1.start()
-    p2.start()
-    p3.start()
+    for p in processes:
+        p.start()
 
     # start app
-    app = init_app(shared_queue)
-    app.run(debug=True, port=5000)
-
-    p1.join()
-    p2.join()
-    p3.join()
+    try:
+        app = init_app(shared_queue)
+        app.run(debug=False, port=5000)
+    except KeyboardInterrupt:
+        print("Stop Backend!")
+    finally:
+        for p in processes:
+            if p.is_alive():
+                p.terminate()
+                p.join()
